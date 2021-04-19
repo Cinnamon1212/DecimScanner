@@ -48,3 +48,15 @@ RandomlyGeneratedIPs = ["91.141.119.216", "204.45.197.227", "76.145.131.209", "1
 ports = [21, 22, 80, 443]   
 scan = DecimScanner.TCPScans.FINScan(RandomlyGeneratedIPs, ports, timeout=0.5, max_threads=50)  
 ```
+
+## Creator contact   
+Please contact me via [Github](https://github.com/Cinnamon1212/) or [Cinnamon#7617](https://discord.com/users/292382410530750466/) on discord for with concerns or queries
+
+## Patreon  
+Donations are always appreicated! [Patreon](https://www.patreon.com/cinnamon1212) 
+
+
+## Other Repos
+* [CyberSecurity Bot](https://github.com/Cinnamon1212/CyberSecDiscordBot)
+* [LAN Pwning Toolkit](https://github.com/Cinnamon1212/LAN_Pwning_Toolkit)
+* [BlueKit](https://github.com/Cinnamon1212/BlueKit)
