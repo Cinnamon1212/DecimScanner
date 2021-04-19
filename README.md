@@ -34,8 +34,8 @@ A python package for threaded scanning
 ## Set Up
 
 ### Requirements
-* [Scapy](https://scapy.readthedocs.io/) ```sh pip3 install scapy ```
-* [Python3](https://www.python.org/) ```sh apt install python3 ```
+* [Scapy](https://scapy.readthedocs.io/) ```pip3 install scapy ```
+* [Python3](https://www.python.org/) ```apt install python3 ```
 
 
 
