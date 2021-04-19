@@ -39,6 +39,18 @@ A python package for threaded scanning
 * [Python3](https://www.python.org/)   
 ```apt install python3 ```
 
+### Commands
+PIP:
+```sh
+pip3 install DecimScanner
+```
+Manual:
+```sh
+git clone https://github.com/Cinnamon1212/DecimScanner.git
+tar -xzf (tar file name)
+python3 setup.py install
+```
+
 ### Python example
 **Format: DecimScanner.(ScanPlatform/Protocol).(ScanType)**
 
