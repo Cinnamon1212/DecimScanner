@@ -40,5 +40,5 @@ A python package for threaded scanning
 ```apt install python3 ```
 
 ### Python example
-[Format: DecimScanner.(ScanPlatform/Protocol).(ScanType)]
+**Format: DecimScanner.(ScanPlatform/Protocol).(ScanType)**
 
