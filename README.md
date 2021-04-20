@@ -5,7 +5,7 @@ A python package for threaded scanning
 
 ## Features  
 
-### TCP Scans 
+### TCP Scans
 * TCP Connect  
 * SYN/Stealth Scan  
 * FIN Scan  
@@ -18,7 +18,7 @@ A python package for threaded scanning
 ### UDP Scans  
 * UDP Connect
 
-### ICMP Scans 
+### ICMP Scans
 * ICMP Ping
 * IP Protocol Scan
 
@@ -40,24 +40,24 @@ A python package for threaded scanning
 
 * Add more UDP scans  
 * Create ARP class with relevant scans  
-* Create Wireless 
+* Create Wireless
 * Ensure all errors are correctly handled with a custom message  
-* Add service discovery to TCP Connect (or make a seperate scan)  
-* Add OS detection (and make a seperate scan)  
+* Add service discovery to TCP Connect (or make a separate scan)  
+* Add OS detection (and make a separate scan)  
 
 ## Set Up
 
 ### Requirements
 * [Python3](https://www.python.org/)   
-```sh 
+```sh
 apt install python3
 ```
 * [Scapy](https://scapy.readthedocs.io/)  
-```sh 
+```sh
 pip install scapy
 ```
 * [Pybluez](https://github.com/pybluez/pybluez)  
-```sh 
+```sh
 pip install pybluez
 ```
 
@@ -87,7 +87,7 @@ scan = DecimScanner.TCPScans.FINScan(RandomlyGeneratedIPs, ports, timeout=0.5, m
 Please contact me via [Github](https://github.com/Cinnamon1212/) or [Cinnamon#7617](https://discord.com/users/292382410530750466/) on discord for with concerns or queries
 
 ## Patreon  
-Donations are always appreicated! [Patreon](https://www.patreon.com/cinnamon1212) 
+Donations are always appreciated! [Patreon](https://www.patreon.com/cinnamon1212)
 
 
 ## Other Repos
