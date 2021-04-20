@@ -35,9 +35,11 @@ A python package for threaded scanning
 
 ### Requirements
 * [Scapy](https://scapy.readthedocs.io/)  
-```pip3 install scapy ```
+```bash pip install scapy ```
 * [Python3](https://www.python.org/)   
-```apt install python3 ```
+```bash apt install python3 ```
+* [Pybluez](https://github.com/pybluez/pybluez)
+```bash pip install pybluez ```
 
 ### Commands
 PIP:
