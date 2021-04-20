@@ -22,6 +22,20 @@ A python package for threaded scanning
 * ICMP Ping
 * IP Protocol Scan
 
+### Traceroute
+* DNS Traceroute
+* UDP Traceroute
+* TCP SYN Traceroute
+
+### DNS
+* DNS IPv4 enum
+* DNS SAO
+* DNS MX
+
+### Bluetooth
+* Get nearby (not threaded)
+* Service scan
+
 ## To Do List   
 
 * Add more UDP scans  
@@ -50,7 +64,7 @@ pip install pybluez
 ### Commands
 PIP:
 ```sh
-pip3 install DecimScanner
+pip install DecimScanner
 ```
 Manual:
 ```sh
