@@ -40,7 +40,7 @@ A python package for threaded scanning
 
 * Add more UDP scans  
 * Create ARP class with relevant scans  
-* Create Wireless and Bluetooth scans  
+* Create Wireless 
 * Ensure all errors are correctly handled with a custom message  
 * Add service discovery to TCP Connect (or make a seperate scan)  
 * Add OS detection (and make a seperate scan)  
