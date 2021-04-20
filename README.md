@@ -5,7 +5,7 @@ A python package for threaded scanning
 
 ## Features  
 
-### <ins>TCP Scans</ins>  
+### TCP Scans 
 * TCP Connect  
 * SYN/Stealth Scan  
 * FIN Scan  
@@ -15,10 +15,10 @@ A python package for threaded scanning
 * Window Scan  
 * Idle Scan  
 
-### <ins>UDP Scans</ins>    
+### UDP Scans  
 * UDP Connect
 
-### <ins> ICMP Scans</ins>  
+### ICMP Scans 
 * ICMP Ping
 * IP Protocol Scan
 
@@ -34,13 +34,13 @@ A python package for threaded scanning
 ## Set Up
 
 ### Requirements
-* [Scapy](https://scapy.readthedocs.io/)  
-```sh 
-pip install scapy
-```
 * [Python3](https://www.python.org/)   
 ```sh 
 apt install python3
+```
+* [Scapy](https://scapy.readthedocs.io/)  
+```sh 
+pip install scapy
 ```
 * [Pybluez](https://github.com/pybluez/pybluez)  
 ```sh 
