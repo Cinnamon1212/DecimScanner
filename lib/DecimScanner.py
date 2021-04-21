@@ -1,13 +1,16 @@
 import threading
+import socket
 import logging
 import random
+#  import matplotlib (for silencing GDK_IS_DISPLAY)
+import datetime
 import bluetooth
 from queue import Queue
 from scapy.all import IP, TCP, sr1, sr, ICMP, srp, Ether, ARP, UDP, send, srp1, \
     ISAKMP, ISAKMP_payload_SA, ISAKMP_payload_Proposal, RandShort, DNS, DNSQR, \
     DNSRR, DNSRRSOA, DNSRRMX
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
-
+#  matplotlib.use('Agg')
 
 q = Queue()
 results = {}
@@ -43,7 +46,6 @@ Repitive processes
         elif ports is None:
             ports = list(range(1, 1001))
         return ports
-
 
 class scanners:
     """
@@ -549,7 +551,6 @@ All scanners (Network, bluetooth, WiFi and other)
                 results[target] = []
                 results[target].append("target unresponsive")
 
-
     def TCPSynTraceroute(worker):
         target = worker[0]
         t = worker[1]
@@ -575,6 +576,21 @@ All scanners (Network, bluetooth, WiFi and other)
                 results[target] = []
                 results[target].append("target unresponsive")
 
+    def Gethostbyname(worker):
+        target = worker[0]
+        try:
+            hostname = socket.gethostbyname(target)
+            if target in results:
+                results[target].append(hostname)
+            else:
+                results[target] = []
+                results[target].append(hostname)
+        except socket.gaierror:
+            if target in results:
+                results[target].append("target unresponsive")
+            else:
+                results[target] = []
+                results[target].append("target unresponsive")
 
 class threaders:
     """
@@ -686,6 +702,12 @@ Theaders for the different scanners
         while True:
             worker = q.get()
             scanners.DNSTraceroute(worker)
+            q.task_done()
+
+    def Gethostbyname_threader():
+        while True:
+            worker = q.get()
+            scanners.Gethostbyname(worker)
             q.task_done()
 
 class TCPScans:
@@ -927,7 +949,7 @@ class DNSScans:
         return results
 
 
-class traceroute_:
+class Traceroute:
     def __init__():
         global results
         results = {}
@@ -1001,8 +1023,6 @@ class BluetoothScans:
             else:
                 raise ValueError("Duration and device count cannot be None or 0.")
 
-
-
     def ServiceScan(targets, max_threads=30):
         for x in range(max_threads + 1):
             t = threading.Thread(target=threaders.BluetoothServScan_threader)
@@ -1011,6 +1031,7 @@ class BluetoothScans:
 
         for target in targets:
             worker = [target]
+            q.put(worker)
         q.join()
         return results
 
@@ -1020,15 +1041,26 @@ class OtherScans:
         global results
         result = {}
 
-
     def IKEScan(targets, timeout=3, max_threads=30):
         for x in range(max_threads + 1):
             t = threading.Thread(target=threaders.IKEScan_threader)
             t.daemon = True
             t.start()
-
+        targets = utils.ValidateTargets(targets)
         for target in targets:
-            for target in targets:
-                worker = [target, timeout]
+            worker = [target, timeout]
+            q.put(worker)
+        q.join()
+        return results
+
+    def Gethostbyname(targets, max_threads=30):
+        for x in range(max_threads + 1):
+            t = threading.Thread(target=threaders.Gethostbyname_threader)
+            t.daemon = True
+            t.start()
+        targets = utils.ValidateTargets(targets)
+        for target in targets:
+            worker = [target]
+            q.put(worker)
         q.join()
         return results
