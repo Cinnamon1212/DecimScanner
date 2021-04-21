@@ -1,12 +1,17 @@
+import pathlib
 from setuptools import setup
 from setuptools import find_packages
 
+README = (pathlib.Path(__file__).parent / "README.md").read_text()
+
 setup(name="DecimScanner",
-      version="1.0",
+      version="1.2",
+      long_description=README,
+      long_description_content_type="text/markdown",
       description="A threaded scanner package for python",
       author="Cinnamon1212",
       url="https://github.com/Cinnamon1212/",
-      install_requires=['scapy'],
+      install_requires=['scapy', 'pybluez'],
       packages=find_packages(),
       keywords=["python", "threaded scanners", "TCP", "UDP", "ICMP", "Penetration testing", "pentesting", "scapy"],
       classifiers=[
