@@ -29,7 +29,7 @@ A python package for threaded scanning
 
 ### DNS
 * DNS IPv4 enum
-* DNS SAO
+* DNS SOA
 * DNS MX
 
 ### Bluetooth
