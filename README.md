@@ -7,6 +7,7 @@ A python package for threaded scanning
 
 ### TCP Scans
 * TCP Connect  
+* Service Scan
 * SYN/Stealth Scan  
 * FIN Scan  
 * NULL Scan  
@@ -27,6 +28,12 @@ A python package for threaded scanning
 * UDP Traceroute
 * TCP SYN Traceroute
 
+### Web Scans
+* Status Check
+* Directory Check
+* Web Crawler
+
+
 ### DNS
 * DNS IPv4 enum
 * DNS SOA
@@ -41,8 +48,7 @@ A python package for threaded scanning
 * Add more UDP scans  
 * Create ARP class with relevant scans  
 * Create Wireless
-* Ensure all errors are correctly handled with a custom message  
-* Add service discovery to TCP Connect (or make a separate scan)  
+* Ensure all errors are correctly handled with a custom message   
 * Add OS detection (and make a separate scan)  
 
 ## Set Up
