@@ -5,13 +5,13 @@ from setuptools import find_packages
 README = (pathlib.Path(__file__).parent / "README.md").read_text()
 
 setup(name="DecimScanner",
-      version="1.4",
+      version="1.4.2",
       long_description=README,
       long_description_content_type="text/markdown",
       description="A threaded scanner package for python",
       author="Cinnamon1212",
       url="https://github.com/Cinnamon1212/",
-      install_requires=['scapy', 'pybluez', 'bs4'],
+      install_requires=['scapy', 'pybluez', 'bs4', 'dnspython'],
       packages=find_packages(where="src"),
       keywords=["python", "threaded scanners", "TCP", "UDP", "ICMP", "Penetration testing", "pentesting", "scapy"],
       classifiers=[
