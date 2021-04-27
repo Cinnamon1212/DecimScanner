@@ -7,11 +7,12 @@ import re
 #  import matplotlib (for silencing GDK_IS_DISPLAY)
 import datetime
 import bluetooth
+import dns.resolver
 from bs4 import BeautifulSoup
 from queue import Queue
 from scapy.all import IP, TCP, sr1, sr, ICMP, srp, Ether, ARP, UDP, send, srp1, \
     ISAKMP, ISAKMP_payload_SA, ISAKMP_payload_Proposal, RandShort, DNS, DNSQR, \
-    DNSRR, DNSRRSOA, DNSRRMX
+    RandString
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 #  matplotlib.use('Agg')
@@ -23,6 +24,7 @@ Crawled: dict = {}  # {url: [link]}
 WebResponses: dict = {}  # {url: [response]}
 UserPasses: dict = {}   # {ip: [user, pass, port]}
 CurrentDepth = 0  # For web crawler
+Found_Subdomains: dict = {}  # For Subdomain bruteforcing
 
 class utils:
     """
@@ -517,164 +519,53 @@ All scanners (Network, bluetooth, WiFi and other)
             results[target] = []
             results[target].append(services)
 
-    def DNSIPv4(worker):
-        targetIP = worker[0]
-        targetDNS = worker[1]
-        t = worker[2]
-        packet = IP(dst=targetIP)/UDP(sport=RandShort(), dport=53)/DNS(rd=1,qd=DNSQR(qname=targetDNS, qtype="A"))
-        response = sr1(packet, verbose=0, timeout=float(t))
-        if response is not None:
-            if response.haslayer(DNSRR):
-                if targetIP in results:
-                    results[targetIP].append([response.an.rrname.decode(), response.an.rdata])
-                else:
-                    results[targetIP] = []
-                    results[targetIP].append([[response.an.rrname.decode(), response.an.rdata]])
-            else:
-                if targetIP in results:
-                    results[targetIP].append("target online, but gave no DNS response")
-                else:
-                    results[targetIP] = []
-                    results[targetIP].append("target online, but gave no DNS response")
-        else:
-            if targetIP in results:
-                results[targetIP].append("target unresponsive")
-            else:
-                results[targetIP] = []
-                results[targetIP].append("target unresponsive")
-
-    def DNSSAO(worker):
-        targetIP = worker[0]
-        targetDNS = worker[1]
-        t = worker[2]
-        packet = IP(dst=targetIP)/UDP(sport=RandShort(), dport=53)/DNS(rd=1, qd=DNSQR(qname=targetDNS, qtype="SOA"))
-        response = sr1(packet, verbose=0, timeout=float(t))
-        if response is not None:
-            if response.haslayer(DNSRRSOA):
-                if targetIP in results:
-                    results[targetIP].append([response.ns.rname, response.ns.mname])
-                else:
-                    results[targetIP] = []
-                    results[targetIP].append([response.ns.rname, response.ns.mname])
-            else:
-                if targetIP in results:
-                    results[targetIP].append("target online, but gave no DNS response")
-                else:
-                    results[targetIP] = []
-                    results[targetIP].append("target online, but gave no DNS response")
-        else:
-            if targetIP in results:
-                results[targetIP].append("target unresponsive")
-            else:
-                results[targetIP] = []
-                results[targetIP].append("target unresponsive")
-
-    def DNSMX(worker):
-        targetIP = worker[0]
-        targetDNS = worker[1]
-        t = worker[2]
-        packet = IP(dst=targetIP)/UDP(sport=RandShort(), dport=53)/DNS(rd=1,qd=DNSQR(qname=targetDNS, qtype="MX"))
-        response = sr1(packet, verbose=0, timeout=float(t))
-        if response is not None:
-            if response.haslayer(DNSRRMX):
-                exchanges = [x.exchange.decode() for x in response.an.iterpayloads()]
-                if targetIP in results:
-                    results[targetIP].append(exchanges)
-                else:
-                    results[targetIP] = []
-                    results[targetIP].append(exchanges)
-            else:
-                if targetIP in results:
-                    results[targetIP].append("target online, but gave no DNS response")
-                else:
-                    results[targetIP] = []
-                    results[targetIP].append("target online, but gave no DNS response")
-        else:
-            if targetIP in results:
-                results[targetIP].append("target unresponsive")
-            else:
-                results[targetIP] = []
-                results[targetIP].append("target unresponsive")
-
-    def DNSTraceroute(worker):
+    def ReverseDNS(worker):
         target = worker[0]
-        t = worker[1]
-        packet = IP(dst=target, ttl=(1, 10))/ICMP()
-        response = sr1(packet, verbose=0, timeout=float(t), retry=2)
-        if response is not None:
-            if response.haslayer(IP) and response.haslayer(ICMP):
-                IPLayer = response.getlayer(IP)
-                ICMPLayer = response.getlayer(ICMP)
-                if target in results:
-                    results[target].append([IPLayer.src, ICMPLayer.type])
-                else:
-                    results[target] = []
-                    results[target].append([IPLayer.src, ICMPLayer.type])
-            else:
-                if target in results:
-                    results[target].append("target online, but gave an invalid response")
-                else:
-                    results[target] = []
-                    results[target].append("target online, but gave an invalid response")
+        try:
+            response = socket.gethostbyaddr(target)
+        except socket.gaierror:
+            response = "unresponsive"
+        if target in results:
+            results[target].append(response)
         else:
+            results[target] = []
+            results[target].append(response)
+
+    def DNSQuery(worker):
+        target = worker[0]
+        query = worker[1]
+        try:
+            response = dns.resolver.query(target, query)
             if target in results:
-                results[target].append("target unresponsive")
+                results[target].append([query, response])
             else:
                 results[target] = []
-                results[target].append("target unresponsive")
-
-    def UDPTraceroute(worker):
-        target = worker[0]
-        queryname = worker[1]
-        t = worker[2]
-        packet = IP(dst=target, ttl=(1,20))/UDP()/DNS(qd=DNSQR(qname=queryname))
-        response = sr1(packet, verbose=0, timeout=float(t), retry=2)
-        if response is not None:
-            if response.haslayer(IP) and response.haslayer(ICMP):
-                IPLayer = response.getlayer(IP)
-                ICMPLayer = response.getlayer(ICMP)
-                if target in results:
-                    results[target].append([IPLayer.src, ICMPLayer.type])
-                else:
-                    results[target] = []
-                    results[target].append([IPLayer.src, ICMPLayer.type])
-            else:
-                if target in results:
-                    results[target].append("target online, but gave an invalid response")
-                else:
-                    results[target] = []
-                    results[target].append("target online, but gave an invalid response")
-        else:
+                results[target].append([query, response])
+        except dns.resolver.NoAnswer:
             if target in results:
-                results[target].append("target unresponsive")
+                results[target].append([query, "No DNS response given"])
             else:
                 results[target] = []
-                results[target].append("target unresponsive")
-
-    def TCPSynTraceroute(worker):
-        target = worker[0]
-        t = worker[1]
-        packet = IP(dst=target, ttl=(1,10))/TCP(dport=53, flags="S")
-        response = sr1(packet, verbose=0, retry=2, timeout=float(t))
-        if response is not None:
-            if response.haslayer(IP) and response.haslayer(ICMP):
-                if target in results:
-                    results[target].append([])
-                else:
-                    results[target] = []
-                    results[target].append([response.getlayer(IP).src, response.getlayer(ICMP).type])
-            else:
-                if target in results:
-                    results[target].append("target online, but gave an invalid response")
-                else:
-                    results[target] = []
-                    results[target].append("target online, but gave an invalid response")
-        else:
+                results[target].append([query, "No DNS response given"])
+        except dns.resolver.NoMetaqueries:
             if target in results:
-                results[target].append("target unresponsive")
+                results[target].append([query, "Target does no allow meta queries"])
             else:
                 results[target] = []
-                results[target].append("target unresponsive")
+                results[target].append([query ,"Target does no allow meta queries"])
+        except dns.rdatatype.UnknownRdatatype:
+            if target in results:
+                results[target].append([query, "Unknown query type"])
+            else:
+                results[target] = []
+                results[target].append([query, "Unknown query type"])
+        except Exception as e:
+            if target in results:
+                results[target].append([query, e])
+            else:
+                results[target] = []
+                results[target].append([query, e])
+
 
     def Gethostbyname(worker):
         target = worker[0]
@@ -732,9 +623,6 @@ All scanners (Network, bluetooth, WiFi and other)
                 results[target].append([port, "closed"])
 
 
-
-
-
 class WebScanners:
 
     def StatusCheck(worker):
@@ -781,8 +669,7 @@ class WebScanners:
             r = requests.head(full_path, timeout=float(t), headers=headers)
             if r.status_code != 404:
                 if verbose is True:
-                    with printlock:
-                        print(f"[+] {full_path} : {r.status_code}")
+                    print(f"[+] {full_path} : {r.status_code}")
                 if URL in WebDirs:
                     WebDirs[URL].add((full_path, r.status_code))
                 else:
@@ -807,8 +694,7 @@ class WebScanners:
             for x in links:
                 if x not in Crawled[URL]:
                     if verbose is True:
-                        with printlock:
-                            print(f"New link: {x}")
+                        print(f"New link: {x}")
                     Crawled[URL].append(x)
                     found_links = utils.FindLinks(x, URL, t, UA)
                     if found_links is not None:
@@ -817,6 +703,88 @@ class WebScanners:
                                 Crawled[URL].append(found_link)
             CurrentDepth += 1
 
+    def SubDomain(worker):
+        URL = worker[0]
+        sub = worker[1]
+        UA = worker[2]
+        t = worker[3]
+        verbose = worker[4]
+        scheme = URL[0:5]
+        URL = re.sub(r'^https?:\/\/', '', URL)
+        if sub[-1] != ".":
+            full_path = f"{sub}.{URL}"
+        else:
+            full_path = f"{sub}{URL}"
+        headers = requests.utils.default_headers()
+        headers.update({'User-Agent': UA})
+        try:
+            if "https" in scheme.lower():
+                r = requests.head(f"https://{full_path}", timeout=float(t), headers=headers)
+            else:
+                r = requests.head(f"http://{full_path}", timeout=float(t), headers=headers)
+            if verbose is True:
+                print(f"[+] {full_path} responded with {r.status_code}")
+            if URL in Found_Subdomains:
+                Found_Subdomains[URL].append([full_path, r.status_code])
+            else:
+                Found_Subdomains[URL] = []
+                Found_Subdomains[URL].append([full_path, r.status_code])
+        except requests.exceptions.ConnectionError:
+            if verbose is True:
+                print(f"[-] {full_path} does not exists")
+        except requests.exceptions.Timeout:
+            if verbose is True:
+                print(f"[-] {full_path} timed out")
+
+
+class Traceroutes:
+
+    def TCPSYN(worker):
+        target = worker[0]
+        t = worker[1]
+        verbose = worker[2]
+        response = sr1(IP(dst=target, ttl=(1, 10))/TCP(dport=53, flags="S"), verbose=0, timeout=float(t))
+        if response is not None:
+            if target not in results:
+                results[target] = []
+            for snd, rcv in response:
+                if verbose is True:
+                    print(f"[+] Source:{rcv.src} Send time: {snd.time}  Receive time:{rcv.time}")
+                results[target].append([rcv.src, snd.time, rcv.time])
+        else:
+            if verbose is True:
+                print(f"[-] {target} unresponsive")
+            if target in results:
+                results[target].append("unresponsive")
+            else:
+                results[target] = []
+                results[target].append("unresponsive")
+
+    def UDPTraceroute(worker):
+        target = worker[0]
+        queryname = worker[2]
+        t = worker[3]
+        verbose = worker[4]
+        packet = IP(dst=target, ttl=(1, 20))/UDP()/DNS(qd=DNSQR(qname=queryname))
+        response = sr1(packet, timeout=float(t), verbose=0)
+        if response is not None:
+            if target not in results:
+                results[target] = []
+            for snd, rcv in response:
+                if verbose is True:
+                    print(f"[+] {snd.dst}: {rcv.src}")
+                results[target].append([snd.dst, rcv.src])
+        else:
+            if verbose is True:
+                print(f"[-] {target} unresponsive")
+            if target in results:
+                results[target].append("unresponsive")
+            else:
+                results[target] = []
+                results[target].append("unresponsive")
+
+    def DNSTraceroute(worker):
+        pass
 
 class threaders:
     """
@@ -894,40 +862,16 @@ Theaders for the different scanners
             scanners.BluetoothServScan(worker)
             q.task_done()
 
-    def DNSIPv4_threader():
+    def ReverseDNS_threader():
         while True:
             worker = q.get()
-            scanners.DNSIPv4(worker)
+            scanners.ReverseDNS(worker)
             q.task_done()
 
-    def DNSSAO_threader():
+    def DNSQuery_threader():
         while True:
             worker = q.get()
-            scanners.DNSSAO(worker)
-            q.task_done()
-
-    def DNSMX_threader():
-        while True:
-            worker = q.get()
-            scanners.DNSMX(worker)
-            q.task_done()
-
-    def TCPSynTraceroute_threader():
-        while True:
-            worker = q.get()
-            scanners.TCPSynTraceroute(worker)
-            q.task_done()
-
-    def UDPTraceroute_threader():
-        while True:
-            worker = q.get()
-            scanners.UDPTraceroute(worker)
-            q.task_done()
-
-    def DNSTraceroute_threader():
-        while True:
-            worker = q.get()
-            scanners.DNSTraceroute(worker)
+            scanners.DNSQuery(worker)
             q.task_done()
 
     def Gethostbyname_threader():
@@ -961,6 +905,23 @@ Theaders for the different scanners
             scanners.ServiceScan(worker)
             q.task_done()
 
+    def TCPSYNTraceroute_threader():
+        while True:
+            worker = q.get()
+            Traceroutes.TCPSYN(worker)
+            q.task_done()
+
+    def UDPTraceroute_threader():
+        while True:
+            worker = q.get()
+            Traceroutes.UDPTraceroute(worker)
+            q.task_done()
+
+    def SubDomain_threader():
+        while True:
+            worker = q.get()
+            WebScanners.SubDomain(worker)
+            q.task_done()
 
 class TCPScans:
     """
@@ -1094,6 +1055,7 @@ Service Scan - Attempts to identify services running on a port
         q.join()
         return results
 
+
 class UDPScans:
     """
 UDPConnect - Connect to a port using UDP to check if it's open
@@ -1120,7 +1082,7 @@ UDPConnect - Connect to a port using UDP to check if it's open
 class ICMPScans:
     """
 Ping - Ping a host/list of hosts to see if it's online
-Protocol Scan - Determine open IP protocols
+Protocol Scan - Low level IP scan to enumerate supported protocols
 
     """
     def __init__():
@@ -1141,7 +1103,7 @@ Protocol Scan - Determine open IP protocols
         return results
 
 
-    def ProtocolScan(targets, ports=None, timeout=3, max_threads=3):
+    def IPScan(targets, ports=None, timeout=3, max_threads=3):
         for x in range(max_threads + 1):
             t = threading.Thread(target=threaders.IPProtocolScan_threader)
             t.daemon = True
@@ -1174,85 +1136,38 @@ class DNSScans:
         global results
         results = {}
 
-    def DNSIPv4(targets, targetDNSs=["test.com"], timeout=3, max_threads=30):
+    def ReverseDNS(targets, max_threads=30):
         for x in range(max_threads + 1):
-            t = threading.Thread(target=threaders.DNSIPv4_threader)
+            t = threading.Thread(target=threaders.ReverseDNS_threader)
             t.daemon = True
             t.start()
         targets = utils.ValidateTargets(targets)
         for target in targets:
-            for targetDNS in targetDNSs:
-                worker = [target, targetDNS, timeout]
-                q.put(worker)
-        q.join()
-        return results
-
-
-    def DNSSAO(targets, targetDNSs=["test.com"], timeout=3, max_threads=30):
-        for x in range(max_threads + 1):
-            t = threading.Thread(target=threaders.DNSSAO_threader)
-            t.daemon = True
-            t.start()
-        targets = utils.ValidateTargets(targets)
-        for target in targets:
-            for targetDNS in targetDNSs:
-                worker = [target, targetDNS, timeout]
-                q.put(worker)
-        q.join()
-        return results
-
-
-    def DNSMX(targets, targetDNSs=["test.com"], timeout=3, max_threads=30):
-        for x in range(max_threads + 1):
-            t = threading.Thread(target=threaders.DNSMX_threader)
-            t.daemon = True
-            t.start()
-        targets = utils.ValidateTargets(targets)
-        for target in targets:
-            for targetDNS in targetDNSs:
-                worker = [target, targetDNS, timeout]
-                q.put(worker)
-        q.join()
-        return results
-
-
-class Traceroute:
-    def __init__():
-        global results
-        results = {}
-
-    def TCPSyn(targets, timeout=3, max_threads=30):
-        for x in range(max_threads + 1):
-            t = threading.Thread(target=threaders.TCPSynTraceroute_threader)
-            t.daemon = True
-            t.start()
-        targets = utils.ValidateTargets(targets)
-        for target in targets:
-            worker = [target, timeout]
+            worker = [target]
             q.put(worker)
         q.join()
         return results
 
-    def UDP(targets, queryname="test.com", timeout=3, max_threads=30):
+    def Gethostbyname(targets, max_threads=30):
         for x in range(max_threads + 1):
-            t = threading.Thread(target=threaders.UDPTraceroute_threader)
+            t = threading.Thread(target=threaders.Gethostbyname_threader)
             t.daemon = True
             t.start()
         targets = utils.ValidateTargets(targets)
         for target in targets:
-            worker = [target, queryname, timeout]
+            worker = [target]
             q.put(worker)
         q.join()
         return results
 
-    def DNS(targets, timeout=3, max_threads=30):
+    def DNSQuery(targets, querytype: str, max_threads: int = 30):
         for x in range(max_threads + 1):
-            t = threading.Thread(target=threaders.DNSTraceroute_threader)
+            t = threading.Thread(target=threaders.DNSQuery_threader)
             t.daemon = True
             t.start()
         targets = utils.ValidateTargets(targets)
         for target in targets:
-            worker = [target, timeout]
+            worker = [target, querytype]
             q.put(worker)
         q.join()
         return results
@@ -1263,9 +1178,9 @@ class BluetoothScans:
         global results
         results = {}
 
-    def GetNearby(duration=None, devicecount=None):
+    def GetNearby(duration=None, devicecount: int = 0):
         devices = []
-        if devicecount is not None and devicecount > 0:
+        if devicecount != 0:
             while len(devices) != devicecount:
                 nearby = bluetooth.discover_devices(lookup_names=True)
                 for x in nearby:
@@ -1290,7 +1205,7 @@ class BluetoothScans:
             else:
                 raise ValueError("Duration and device count cannot be None or 0.")
 
-    def ServiceScan(targets, max_threads=30):
+    def ServiceScan(targets, max_threads: int = 30):
         for x in range(max_threads + 1):
             t = threading.Thread(target=threaders.BluetoothServScan_threader)
             t.daemon = True
@@ -1302,13 +1217,42 @@ class BluetoothScans:
         q.join()
         return results
 
+class Traceroute:
+
+    def __init__():
+        global results
+        results = {}
+
+    def TCPSYN(targets, timeout=3, max_threads: int = 30, verbose: bool = False):
+        for x in range(max_threads + 1):
+            t = threading.Thread(target=threaders.TCPSYNTraceroute_threader)
+            t.daemon = True
+            t.start()
+        targets = utils.ValidateTargets(targets)
+        for target in targets:
+            worker = [target, timeout, verbose]
+            q.put(worker)
+        q.join()
+        return results
+
+    def UDPTrace(targets, qname="test.com", timeout=3, max_threads: int = 30, verbose: bool = False):
+        for x in range(max_threads + 1):
+            t = threading.Thread(target=threaders.UDPTraceroute_threader)
+            t.daemon = True
+            t.start()
+        targets = utils.ValidateTargets(targets)
+        for target in targets:
+            worker = [target, qname, timeout, verbose]
+            q.put(worker)
+        q.join()
+        return results
 
 class OtherScans:
     def __init__():
         global results
         result = {}
 
-    def IKEScan(targets, timeout=3, max_threads=30):
+    def IKEScan(targets, timeout=3, max_threads: int = 30):
         for x in range(max_threads + 1):
             t = threading.Thread(target=threaders.IKEScan_threader)
             t.daemon = True
@@ -1320,26 +1264,16 @@ class OtherScans:
         q.join()
         return results
 
-    def Gethostbyname(targets, max_threads=30):
-        for x in range(max_threads + 1):
-            t = threading.Thread(target=threaders.Gethostbyname_threader)
-            t.daemon = True
-            t.start()
-        targets = utils.ValidateTargets(targets)
-        for target in targets:
-            worker = [target]
-            q.put(worker)
-        q.join()
-        return results
 
 
 class WebScans:
     def __init__():
-        global WebDirs, WebResponses
+        global WebDirs, WebResponses, Found_Subdomains
         WebDirs = set()
         WebResponses = {}
+        Found_Subdomains = {}
 
-    def DirCheck(URLs, wordlist, timeout=3, max_threads=30, userAgent=None, verbose=False):
+    def DirCheck(URLs, wordlist, timeout=3, max_threads: int = 30, userAgent=None, verbose: bool = False):
         if not os.path.exists(wordlist):
             raise FileNotFoundError(f"Unable to find {wordlist}")
         if userAgent is None:
@@ -1350,7 +1284,6 @@ class WebScans:
             t.daemon = True
             t.start()
 
-        dirs_to_check = []
         with open(wordlist) as f:
             lines = f.readlines()
             for URL in URLs:
@@ -1363,9 +1296,7 @@ class WebScans:
             q.join()
             return WebDirs
 
-        URLs = utils.ValidateTargets(URLs)
-
-    def StatusCheck(URLs, status=None, timeout=3, max_threads=30):
+    def StatusCheck(URLs, status=None, timeout=3, max_threads: int = 30):
         for x in range(max_threads + 1):
             t = threading.Thread(target=threaders.StatusCheck_threader)
             t.daemon = True
@@ -1396,7 +1327,7 @@ class WebScans:
         q.join()
         return WebResponses
 
-    def WebCrawl(URLs, timeout=3, max_threads=30, depth=3, userAgent=None, verbose=False):
+    def WebCrawl(URLs, timeout=3, max_threads: int = 30, depth: int = 3, userAgent=None, verbose: bool = False):
         if userAgent is None:
             userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Safari/605.1.15 Version/13.0.4"
 
@@ -1411,3 +1342,24 @@ class WebScans:
             q.put(worker)
         q.join()
         return WebDirs
+
+    def SubDomain(URLs, wordlist, timeout=3, max_threads: int = 30, userAgent=None, verbose: bool = True):
+        if not os.path.exists(wordlist):
+            raise FileNotFoundError(f"Unable to find {wordlist}")
+        if userAgent is None:
+            userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Safari/605.1.15 Version/13.0.4"
+        for x in range(max_threads + 1):
+            t = threading.Thread(target=threaders.SubDomain_threader)
+            t.daemon = True
+            t.start()
+        with open(wordlist) as f:
+            lines = f.readlines()
+            for URL in URLs:
+                for line in lines:
+                    if line[0] == "#" or line == " ":
+                        pass
+                    else:
+                        worker = [URL, line.strip(), userAgent, timeout, verbose]
+                        q.put(worker)
+            q.join()
+            return Found_Subdomains
