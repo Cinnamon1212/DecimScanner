@@ -1,12 +1,15 @@
-# DecimScanner
+#  _____                __            _______                                         
+#|     \ .-----..----.|__|.--------.|     __|.----..---.-..-----..-----..-----..----.
+#|  --  ||  -__||  __||  ||        ||__     ||  __||  _  ||     ||     ||  -__||   _|
+#|_____/ |_____||____||__||__|__|__||_______||____||___._||__|__||__|__||_____||__|  
+                                                                                    
 
 ## Overview  
 A python package for threaded scanning
 
 ## Features  
 
-### TCP Scans
-* TCP Connect  
+### TCP Scans 
 * Service Scan
 * SYN/Stealth Scan  
 * FIN Scan  
@@ -21,10 +24,9 @@ A python package for threaded scanning
 
 ### ICMP Scans
 * ICMP Ping
-* IP Protocol Scan
+* IP Scan
 
 ### Traceroute
-* DNS Traceroute
 * UDP Traceroute
 * TCP SYN Traceroute
 
@@ -32,16 +34,19 @@ A python package for threaded scanning
 * Status Check
 * Directory Check
 * Web Crawler
+* SubDomain bruteforce
 
 
 ### DNS
-* DNS IPv4 enum
-* DNS SOA
-* DNS MX
+* Reverse DNS
+* Get host by name
+* DNS Query 
+
 
 ### Bluetooth
 * Get nearby (not threaded)
 * Service scan
+
 
 ## To Do List   
 
@@ -65,6 +70,10 @@ pip install scapy
 * [Pybluez](https://github.com/pybluez/pybluez)  
 ```sh
 pip install pybluez
+```
+* [dnspython](https://www.dnspython.org/)
+```sh
+pip install dnspython
 ```
 
 ### Commands
