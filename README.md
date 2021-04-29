@@ -89,10 +89,10 @@ python3 setup.py install
 **Format: DecimScanner.(ScanPlatform/Protocol).(ScanType)**
 
 ```py  
-import DecimScanner  
+from DecimScanner import *  
 RandomlyGeneratedIPs = ["91.141.119.216", "204.45.197.227", "76.145.131.209", "112.77.12.53" ,"25.98.239.105"]
 ports = [21, 22, 80, 443]   
-scan = DecimScanner.TCPScans.FINScan(RandomlyGeneratedIPs, ports, timeout=0.5, max_threads=50)  
+scan = TCPScans.FINScan(RandomlyGeneratedIPs, ports, timeout=0.5, max_threads=50)  
 ```
 
 ## Creator contact   
